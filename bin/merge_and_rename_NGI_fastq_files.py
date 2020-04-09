@@ -61,13 +61,13 @@ def merge_files(input_dir, dest_dir):
 
 def actual_merging(sample_name, read_nb, tomerge, dest_dir):
     outfile=os.path.join(dest_dir, "{}_R{}.fastq.gz".format(sample_name, read_nb))
-    print "Merging the following files:"
+    print("Merging the following files:")
     if not tomerge:
-        print "No read {} files found".format(read_nb)
+        print("No read {} files found".format(read_nb))
         return
     for fq in tomerge:
-        print fq
-    print "as {}".format(outfile) 
+        print(fq)
+    print("as {}".format(outfile))
     with open(outfile, 'wb') as wfp:
         for fn in tomerge:
             with open(fn, 'rb') as rfp:
