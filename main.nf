@@ -75,7 +75,7 @@ println "========================================================"
 
 process merge_fastq {
 
-    publishDir params.outdir, mode: 'copy'  
+    publishDir params.outdir, mode: 'move'  
 
     input:
     file inputdir from input
