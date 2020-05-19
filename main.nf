@@ -29,6 +29,7 @@ def helpMessage() {
     Optional arguments:
       --inputdir                    Path to input data [fastq_files] - multiple directories separated by commas
       --outdir                      The output directory where the results will be saved [merged_fastq_files]
+      --suffix                      Optional suffix for output sample names, e.g. sample_suffix_R[1,2].fastq.gz
     """.stripIndent()
 }
 
@@ -43,7 +44,7 @@ if (params.help){
 // Defines reads and outputdir
 params.inputdir = "fastq_files"
 params.outdir = 'merged_fastq_files'
-
+params.suffix = ''
 
 // Header 
 println "========================================================"
@@ -78,7 +79,6 @@ input_dir_files = file(input_dir_strings[0])
 for (i = 1; i < input_dir_strings.size(); i = i + 1) {
   input_dir_files += ',' + file(input_dir_strings[i])
 }
-println(input_dir_files)
  
 // Merge FastQ files
 
@@ -92,7 +92,7 @@ process merge_fastq {
 
     script:
     """
-    merge_and_rename_NGI_fastq_files.py ${input_dir_files} ./ > merge_log
+    merge_and_rename_NGI_fastq_files.py ${input_dir_files} ${params.suffix} ./ > merge_log
     """
 }
 

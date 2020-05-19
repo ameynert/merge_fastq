@@ -7,7 +7,7 @@ import shutil
 import argparse
 import collections
 
-def merge_files(input_dirs, dest_dir):
+def merge_files(input_dirs, dest_dir, suffix):
     
     #Gather all fastq files in inputdir and its subdirs
     fastq_files=[]
@@ -51,8 +51,8 @@ def merge_files(input_dirs, dest_dir):
         fastq_files_read1.sort()
         fastq_files_read2.sort()
 
-        actual_merging(sample_name,1, fastq_files_read1, dest_dir)
-        actual_merging(sample_name,2, fastq_files_read2, dest_dir)
+        actual_merging(sample_name,1, fastq_files_read1, dest_dir, suffix)
+        actual_merging(sample_name,2, fastq_files_read2, dest_dir, suffix)
         
         for fq in fastq_files_read1:
             fastq_files.remove(fq)
@@ -60,8 +60,8 @@ def merge_files(input_dirs, dest_dir):
             fastq_files.remove(fq)
 
 
-def actual_merging(sample_name, read_nb, tomerge, dest_dir):
-    outfile=os.path.join(dest_dir, "{}_R{}.fastq.gz".format(sample_name, read_nb))
+def actual_merging(sample_name, read_nb, tomerge, dest_dir, suffix):
+    outfile=os.path.join(dest_dir, "{}{}_R{}.fastq.gz".format(sample_name, suffix, read_nb))
     print("Merging the following files:")
     if not tomerge:
         print("No read {} files found".format(read_nb))
@@ -80,7 +80,9 @@ if __name__ == "__main__":
    Written with a the NGI folder structure in mind.""")
    parser.add_argument("input_dir", metavar='Input directory', nargs='?', default='.',
                                    help="Base directory for the fastq files that should be merged. ")
+   parser.add_argument("suffix", metavar='Suffix for sample names', nargs='?', default='',
+                                   help="Optional suffix for sample names in output file names, e.g. sample_R1.fastq.gz. ")
    parser.add_argument("dest_dir", metavar='Output directory', nargs='?', default='.',
-                                   help="Path path to where the merged files should be outputed. ")
+                                   help="Path to where the merged files should be output. ")
    args = parser.parse_args() 
-   merge_files(args.input_dir, args.dest_dir)
+   merge_files(args.input_dir, args.dest_dir, args.suffix)
