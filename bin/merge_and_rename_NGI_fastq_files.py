@@ -7,14 +7,15 @@ import shutil
 import argparse
 import collections
 
-def merge_files(input_dir, dest_dir):
+def merge_files(input_dirs, dest_dir):
     
     #Gather all fastq files in inputdir and its subdirs
     fastq_files=[]
-    for subdir, dirs, files in os.walk(input_dir):
-        for fastq in  files:
-            if fastq.endswith('.fastq.gz'):
-                fastq_files.append(os.path.join(subdir, fastq))
+    for input_dir in input_dirs.split(','):
+        for subdir, dirs, files in os.walk(input_dir):
+            for fastq in  files:
+                if fastq.endswith('.fastq.gz'):
+                    fastq_files.append(os.path.join(subdir, fastq))
    
     #Match NGI sample number from flowcell
     sample_pattern=re.compile("^(.+)_S[0-9]+(_.+)*_R([1-2])_")

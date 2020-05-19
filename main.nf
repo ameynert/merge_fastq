@@ -27,7 +27,7 @@ def helpMessage() {
     nextflow run nf-core/merge_fastq --inputdir fastq_files --outputdir merged_fastq_files
 
     Optional arguments:
-      --inputdir                    Path to input data [fastq_files]
+      --inputdir                    Path to input data [fastq_files] - multiple directories separated by commas
       --outdir                      The output directory where the results will be saved [merged_fastq_files]
     """.stripIndent()
 }
@@ -43,7 +43,6 @@ if (params.help){
 // Defines reads and outputdir
 params.inputdir = "fastq_files"
 params.outdir = 'merged_fastq_files'
-input = file(params.inputdir)
 
 
 // Header 
@@ -70,6 +69,16 @@ println "['Script dir']        = workflow.projectDir"
 println "['Config Profile']    = workflow.profile"
 println "========================================================"
 
+
+// Separate input directories by comma on the command line, convert to file objects and pass
+// to merge_fastq
+
+input_dir_strings = params.inputdir.split(',')
+input_dir_files = file(input_dir_strings[0])
+for (i = 1; i < input_dir_strings.size(); i = i + 1) {
+  input_dir_files += ',' + file(input_dir_strings[i])
+}
+println(input_dir_files)
  
 // Merge FastQ files
 
@@ -77,16 +86,13 @@ process merge_fastq {
 
     publishDir params.outdir, mode: 'move'  
 
-    input:
-    file inputdir from input
-
     output:
     file merge_log
     file '*.gz'
 
     script:
     """
-    merge_and_rename_NGI_fastq_files.py $inputdir ./ > merge_log
+    merge_and_rename_NGI_fastq_files.py ${input_dir_files} ./ > merge_log
     """
 }
 
