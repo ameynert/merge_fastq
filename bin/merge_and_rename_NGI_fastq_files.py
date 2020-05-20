@@ -80,9 +80,9 @@ if __name__ == "__main__":
    Written with a the NGI folder structure in mind.""")
    parser.add_argument("input_dir", metavar='Input directory', nargs='?', default='.',
                                    help="Base directory for the fastq files that should be merged. ")
-   parser.add_argument("suffix", metavar='Suffix for sample names', nargs='?', default='',
-                                   help="Optional suffix for sample names in output file names, e.g. sample_R1.fastq.gz. ")
    parser.add_argument("dest_dir", metavar='Output directory', nargs='?', default='.',
                                    help="Path to where the merged files should be output. ")
+   parser.add_argument("suffix", metavar='Suffix for sample names', nargs='?', default='',
+                                   help="Optional suffix for sample names in output file names, e.g. sample_R1.fastq.gz. ")
    args = parser.parse_args() 
    merge_files(args.input_dir, args.dest_dir, args.suffix)

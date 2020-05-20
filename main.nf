@@ -92,7 +92,7 @@ process merge_fastq {
 
     script:
     """
-    merge_and_rename_NGI_fastq_files.py ${input_dir_files} ${params.suffix} ./ > merge_log
+    merge_and_rename_NGI_fastq_files.py ${input_dir_files} ./ ${params.suffix} > merge_log
     """
 }
 
