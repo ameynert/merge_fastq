@@ -29,6 +29,7 @@ def helpMessage() {
     Optional arguments:
       --inputdir                    Path to input data [fastq_files] - multiple directories separated by commas
       --outdir                      The output directory where the results will be saved [merged_fastq_files]
+      --toremove                    Optional suffix to remove from input sample names, e.g. sample_toremove_S1_L001_R1_001.fastq.gz
       --suffix                      Optional suffix for output sample names, e.g. sample_suffix_R[1,2].fastq.gz
     """.stripIndent()
 }
@@ -45,18 +46,13 @@ if (params.help){
 params.inputdir = "fastq_files"
 params.outdir = 'merged_fastq_files'
 params.suffix = ''
+params.toremove = ''
 
 // Header 
 println "========================================================"
-println "                                       ,--./,-.         "
-println "          ___     __  __   __  ___    /,-._.--~\'       "
-println "    |\\ | |__  __ /  `/  \\ |__)|__        }  {         "
-println "    | \\| |       \\__ \\__/ |  \\|___   \\`-._,-`-,    "
-println "                                      `._,._,\'         "
-println "                                                        "
 println "       M E R G E _ F A S T Q    P I P E L I N E         "
 println "========================================================"
-println "['Pipeline Name']     = nf-core/merge_fastq"
+println "['Pipeline Name']     = ameynert/merge_fastq"
 println "['Pipeline Version']  = workflow.manifest.version"
 println "['Inputdir']          = $params.inputdir"
 println "['Output dir']        = $params.outdir"
@@ -79,20 +75,40 @@ input_dir_files = file(input_dir_strings[0])
 for (i = 1; i < input_dir_strings.size(); i = i + 1) {
   input_dir_files += ',' + file(input_dir_strings[i])
 }
- 
-// Merge FastQ files
 
-process merge_fastq {
-
-    publishDir params.outdir, mode: 'move'  
+// Identify groups of FastQ files
+process identify_groups {
 
     output:
-    file merge_log
-    file '*.gz'
+    stdout into group_output_ch
 
     script:
     """
-    merge_and_rename_NGI_fastq_files.py ${input_dir_files} ./ ${params.suffix} > merge_log
+    identify_fastq_files_to_merge.py ${input_dir_files} ${params.toremove}
+    """
+}
+
+// Split the output by lines
+group_output_ch
+    .splitCsv()
+    .map { row -> tuple(row[0], row[1], row[2]) }
+    .set { group_ch }
+ 
+// Merge FastQ files
+process merge_fastq {
+
+    publishDir params.outdir, mode: 'move'
+
+    input:
+    tuple val(sample_name), val(read_end), val(files) from group_ch
+
+    output:
+    file("*.log")
+    file("*.gz")
+
+    script:
+    """
+    merge_and_rename_NGI_fastq_files.py ${files} ${sample_name} ${read_end} ./ ${params.suffix} > ${sample_name}.merge.log
     """
 }
 

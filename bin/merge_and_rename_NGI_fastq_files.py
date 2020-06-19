@@ -7,61 +7,9 @@ import shutil
 import argparse
 import collections
 
-def merge_files(input_dirs, dest_dir, suffix):
-    
-    #Gather all fastq files in inputdir and its subdirs
-    fastq_files=[]
-    for input_dir in input_dirs.split(','):
-        for subdir, dirs, files in os.walk(input_dir):
-            for fastq in  files:
-                if fastq.endswith('.fastq.gz'):
-                    fastq_files.append(os.path.join(subdir, fastq))
-   
-    #Match NGI sample number from flowcell
-    sample_pattern=re.compile("^(.+)_S[0-9]+(_.+)*_R([1-2])_")
-    #Remove files that already have the right name (i.e have been merged already)
-    matches=[]
-    for fastq_file in fastq_files:
-        try:
-            match=sample_pattern.search(os.path.basename(fastq_file)).group(1)
-            if match:
-                matches.append(fastq_file)
-        except AttributeError:
-            continue
-    fastq_files=matches
-     
-    while fastq_files:
-        tomerge=[]
-        
-        #grab one sample to work on
-        first=fastq_files[0]
-        fq_bn=os.path.basename(first)
-        sample_name=sample_pattern.match(fq_bn).group(1)
-        fastq_files_read1=[]
-        fastq_files_read2=[]
-        
-        for fq in fastq_files:
-            this_sample_pattern = re.compile("^" + sample_name + "_S[0-9]+(_.+)*_R([1-2])_")
-            if this_sample_pattern.match(os.path.basename(fq)) and "_R1_" in os.path.basename(fq):
-                fastq_files_read1.append(fq) 
-                
-            if this_sample_pattern.match(os.path.basename(fq)) and "_R2_" in os.path.basename(fq):
-                fastq_files_read2.append(fq) 
-
-        fastq_files_read1.sort()
-        fastq_files_read2.sort()
-
-        actual_merging(sample_name,1, fastq_files_read1, dest_dir, suffix)
-        actual_merging(sample_name,2, fastq_files_read2, dest_dir, suffix)
-        
-        for fq in fastq_files_read1:
-            fastq_files.remove(fq)
-        for fq in fastq_files_read2:
-            fastq_files.remove(fq)
-
-
-def actual_merging(sample_name, read_nb, tomerge, dest_dir, suffix):
+def merge_files(sample_name, read_nb, file_list, dest_dir, suffix):
     outfile=os.path.join(dest_dir, "{}{}_R{}.fastq.gz".format(sample_name, suffix, read_nb))
+    tomerge = file_list.split(':')
     print("Merging the following files:")
     if not tomerge:
         print("No read {} files found".format(read_nb))
@@ -76,13 +24,12 @@ def actual_merging(sample_name, read_nb, tomerge, dest_dir, suffix):
         
 
 if __name__ == "__main__":
-   parser = argparse.ArgumentParser(description=""" Merges all fastq-files from each samples into one file. Looks through the given dir and subdirs.
-   Written with a the NGI folder structure in mind.""")
-   parser.add_argument("input_dir", metavar='Input directory', nargs='?', default='.',
-                                   help="Base directory for the fastq files that should be merged. ")
-   parser.add_argument("dest_dir", metavar='Output directory', nargs='?', default='.',
-                                   help="Path to where the merged files should be output. ")
-   parser.add_argument("suffix", metavar='Suffix for sample names', nargs='?', default='',
-                                   help="Optional suffix for sample names in output file names, e.g. sample_R1.fastq.gz. ")
+   parser = argparse.ArgumentParser(description=""" Merges the given list of FASTQ files. Output as {dest_dir}/{sample_name}{suffix}_R{read_end}.fastq.gz.""")
+   parser.add_argument("files", nargs='?', default='.', help="Colon-delimited list of FASTQ files to merge.")
+   parser.add_argument("sample_name", nargs='?', default='.', help="Output sample name.")
+   parser.add_argument("read_end", nargs='?', default='.', help="Read end (1 or 2).")
+   parser.add_argument("dest_dir", nargs='?', default='.', help="Path to where the merged files should be output. ")
+   parser.add_argument("suffix", nargs='?', default='', help="Optional suffix for sample names in output file names, e.g. sample_R1.fastq.gz. ")
    args = parser.parse_args() 
-   merge_files(args.input_dir, args.dest_dir, args.suffix)
+   merge_files(args.sample_name, args.read_end, args.files, args.dest_dir, args.suffix)
+
