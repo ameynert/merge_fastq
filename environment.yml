@@ -1,0 +1,10 @@
+# You can use this file to create a conda environment for this pipeline:
+#   conda env create -f environment.yml
+name: merge_fastq-1.0dev
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconda::fastp=0.20.1
+

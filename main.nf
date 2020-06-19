@@ -31,6 +31,7 @@ def helpMessage() {
       --outdir                      The output directory where the results will be saved [merged_fastq_files]
       --toremove                    Optional suffix to remove from input sample names, e.g. sample_toremove_S1_L001_R1_001.fastq.gz
       --suffix                      Optional suffix for output sample names, e.g. sample_suffix_R[1,2].fastq.gz
+      --readlen                     Optional maximum read length for hard trimming with fastp
     """.stripIndent()
 }
 
@@ -47,6 +48,7 @@ params.inputdir = "fastq_files"
 params.outdir = 'merged_fastq_files'
 params.suffix = ''
 params.toremove = ''
+params.readlen = -1
 
 // Header 
 println "========================================================"
@@ -97,19 +99,52 @@ group_output_ch
 // Merge FastQ files
 process merge_fastq {
 
-    publishDir params.outdir, mode: 'move'
+    if (params.readlen < 0) {
+      publishDir params.outdir, mode: 'move'
+    } else {
+      publishDir params.outdir, mode: 'copy',
+          saveAs: { filename ->
+            if (filename.indexOf("merge.log") > 0) filename
+            else null
+          }
+    }
 
     input:
     tuple val(sample_name), val(read_end), val(files) from group_ch
 
     output:
     file("*.log")
-    file("*.gz")
+    tuple val(sample_name), file("*.gz") into reads_output_ch
 
     script:
     """
     merge_and_rename_NGI_fastq_files.py ${files} ${sample_name} ${read_end} ./ ${params.suffix} > ${sample_name}.merge.log
     """
+}
+
+reads_output_ch
+  .groupTuple()
+  .set { reads_ch }
+
+if (params.readlen > 0) {
+    // Trim FASTQ files
+    process trim_reads {
+
+        publishDir params.outdir, mode: 'move'
+
+	input:
+        set val(sample_name), file(reads) from reads_ch
+
+        output:
+        file(reads)
+
+	script:
+        """
+        fastp -b ${params.readlen} -i ${reads[0]} -I ${reads[1]} -o tmp.${reads[0]} -O tmp.${reads[1]}
+        mv tmp.${reads[0]} ${reads[0]}
+	mv tmp.${reads[1]} ${reads[1]}
+        """
+    }
 }
 
 workflow.onComplete { 
